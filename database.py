@@ -24,6 +24,13 @@ class Enrollment(BaseModel):
     id: int
     course: Course
     student: str #just placeholder for now. may or may not be used later.
+    
+#probably not used in DS2, but write it now so we have for when we need it.
+class Wishlist_item(BaseModel):
+    id: int
+    wishlist: str
+    course: Course
+    student: str
   
 #SECTIONS defines a list of course objects
 SECTIONS = [
@@ -50,3 +57,8 @@ ENROLLMENTS = [
     Enrollment(id=2, course=SECTIONS[15], student="You")
 ]
 _next_enrollment_id = 3
+
+WISHLIST = [
+    Wishlist_item(id=1, wishlist="primary list", course=SECTIONS[12], student"You"),
+    Wishlist_item(id=2, wishlist="secondary list", course=SECTIONS[14], student"You"),
+]
