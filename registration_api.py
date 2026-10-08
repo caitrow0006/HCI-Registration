@@ -54,21 +54,6 @@ ENROLLMENTS = [
 ]
 _next_enrollment_id = 4
 
-ANNOUNCEMENTS = [
-    {
-        "id": 1,
-        "title": "Registration for Spring closes Friday",
-        "posted": "2026-08-20T09:00:00",
-        "body": "Priority registration for spring term sections closes this Friday at 5pm. Schedule changes after that require instructor permission.",
-    },
-    {
-        "id": 2,
-        "title": "New CS 340 section added",
-        "posted": "2026-08-19T09:00:00",
-        "body": "A second section of CS 340 has been added Tuesday/Thursday afternoons to relieve demand on the morning section.",
-    },
-]
-
 # ---------------------------------------------------------------------
 # Routes
 # ---------------------------------------------------------------------
@@ -107,6 +92,7 @@ def list_sections():
 def get_section(section_id: int):
     return _summarize_section(_get_section_or_404(section_id))
 
+//will need to modify later
 @app.get("/my-schedule")
 def get_my_schedule():
     mine = [e for e in ENROLLMENTS if e["student"] == "you"]
@@ -115,10 +101,6 @@ def get_my_schedule():
         section = _get_section_or_404(e["section_id"])
         enriched.append({**e, **_summarize_section(section)})
     return enriched
-
-@app.get("/announcements")
-def list_announcements():
-    return ANNOUNCEMENTS
 
 @app.post("/register")
 def register(req: RegisterRequest):
