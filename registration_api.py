@@ -37,6 +37,7 @@ app.add_middleware(
 # In-memory "database"
 # ---------------------------------------------------------------------
 
+
 SECTIONS = [
     {"id": 1, "code": "CS 212-01", "title": "Data Structures & Algorithms", "instructor": "Prof. Cash", "meets": "MWF 9:00-9:50", "capacity": 30},
     {"id": 2, "code": "CS 212-02", "title": "Data Structures & Algorithms", "instructor": "Prof. Cash", "meets": "MWF 11:00-11:50", "capacity": 30},
@@ -57,6 +58,25 @@ _next_enrollment_id = 4
 # ---------------------------------------------------------------------
 # Routes
 # ---------------------------------------------------------------------
+
+#@Caitriona
+#TODO: move to other file
+class Schedule(BaseModel):
+    building: str
+    days: str
+    room_num: int
+    start_hour: int #use 24 hour time (ex 2015 = 8:15 pm)
+    end_hour: int #use 24 hour time
+
+class Course(BaseModel):
+    id: int
+    department: str
+    course_num: int
+    section_num: int
+    title: str
+    instructor: str
+    time: Schedule
+    capacity: int
 
 class RegisterRequest(BaseModel):
     section_id: int
