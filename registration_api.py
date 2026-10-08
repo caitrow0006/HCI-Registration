@@ -23,6 +23,7 @@ Endpoints:
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from .database import SECTIONS, ENROLLMENTS, _next_enrollment_id
 
 app = FastAPI(title="Mock Course Registration API")
 
@@ -112,7 +113,7 @@ def list_sections():
 def get_section(section_id: int):
     return _summarize_section(_get_section_or_404(section_id))
 
-//will need to modify later
+# will need to modify later
 @app.get("/my-schedule")
 def get_my_schedule():
     mine = [e for e in ENROLLMENTS if e["student"] == "you"]
