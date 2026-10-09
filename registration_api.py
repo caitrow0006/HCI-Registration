@@ -15,6 +15,7 @@ Endpoints:
     GET  /sections
     GET  /sections/{section_id}
     GET  /my-schedule
+    GET  /wishlist/{wishlist_id}
     POST /register   body: {"section_id": int}
     POST /drop       body: {"section_id": int}
     GET  /announcements
@@ -23,7 +24,7 @@ Endpoints:
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from .database import SECTIONS, ENROLLMENTS, _next_enrollment_id
+from database import SECTIONS, ENROLLMENTS, _next_enrollment_id
 
 app = FastAPI(title="Mock Course Registration API")
 
@@ -54,6 +55,11 @@ ENROLLMENTS = [
     {"id": 3, "section_id": 1, "student": "Noah Kahan"},
 ]
 _next_enrollment_id = 4
+
+WISHLIST = [
+    {"id": 1, "sections": [1, 2, 3]},
+    {"id": 2, "sections": [4, 5]},
+]
 
 # ---------------------------------------------------------------------
 # Routes
@@ -89,9 +95,19 @@ def _summarize_section(s: dict) -> dict:
 def list_sections():
     return [_summarize_section(s) for s in SECTIONS]
 
-@app.get("/sections/{section_id}")
-def get_section(section_id: int):
-    return _summarize_section(_get_section_or_404(section_id))
+# @app.get("/sections/{section_id}")
+# def get_section(section_id: int):
+#     return _summarize_section(_get_section_or_404(section_id))
+
+@app.get("/wishlist/{wishlist_id}")
+def get_wishlist(wishlist_id: int):
+    wishlist = []
+    for w in WISHLIST:
+        if w["id"] == wishlist_id:
+            for section_id in w["sections"]:
+                section = _get_section_or_404(section_id)
+                wishlist.append(section)
+    return [_summarize_section(s) for s in wishlist]
 
 # will need to modify later
 @app.get("/my-schedule")
@@ -103,7 +119,7 @@ def get_my_schedule():
         enriched.append({**e, **_summarize_section(section)})
     return enriched
 
-@app.post("/register")
+@app.post("/register/register")
 def register(req: RegisterRequest):
     global _next_enrollment_id
     section = _get_section_or_404(req.section_id)
@@ -117,7 +133,7 @@ def register(req: RegisterRequest):
     _next_enrollment_id += 1
     return new_enrollment
 
-@app.post("/drop")
+@app.delete("/register/drop")
 def drop(req: DropRequest):
     for i, e in enumerate(ENROLLMENTS):
         if e["section_id"] == req.section_id and e["student"] == "you":
