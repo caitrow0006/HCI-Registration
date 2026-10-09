@@ -53,7 +53,60 @@ def drop_section(section_id: int):
 
 @ui.page("/")
 def main_page():
-    render_content()
+
+    drawer = ui.left_drawer().props("width=110")
+    drawer.style('background-color: #003591')
+
+    #sidebar with leftdrawer
+    with drawer:
+        ui.image('images/unhlogo.png').classes('w-20')
+
+        #way to be able to click on images
+        #TODO: in future need to change this for all images and make them display a different page
+        #for each respective image
+        ui.interactive_image('images/tempPencil.png') \
+            .on('click', lambda e: ui.notify('You clicked an Image!', timeout = 2000)).classes('w-15 cursor-pointer')
+        ui.label('Register')
+
+        ui.image('images/tempLight.png').classes('w-15')
+        ui.label('Plan')
+
+        ui.image('images/tempCal.webp').classes('w-15')
+        ui.label('Schedule')
+
+        ui.image('images/tempQuest.png').classes('w-15')
+        ui.label('FAQ')
+
+    #The main register page
+    ui.label("Register!").style('font-size: 45px; font-weight: bold;')
+
+    with ui.row().style('gap: 450px'):
+
+        with ui.card():
+            with ui.column().style('gap: 30px'):
+                ui.label("Search on Course Title").style('font-size: 25px; font-weight: bold; font-family: Comic Sans MS')
+                ui.input(placeholder="Ex: Math 425").classes('border-2 border-blue-500 rounded-md px-2 width-50')
+
+                ui.label("Search on CRN").style('font-size: 25px; font-weight: bold; font-family: Comic Sans MS')
+                ui.input(placeholder="Ex: 7324246").classes('border-2 border-blue-500 rounded-md px-2 width-50')
+
+                ui.label("Search From Wishlist").style('font-size: 25px; font-weight: bold; font-family: Comic Sans MS')
+                with ui.dropdown_button('Select Wishlist', auto_close=True):
+                    ui.item('Wishlist 1', on_click=lambda: ui.notify('You clicked item 1'))
+                    ui.item('Wishlist 2', on_click=lambda: ui.notify('You clicked item 2'))
+                    ui.item('Wishlist 3', on_click=lambda: ui.notify('You clicked item 2'))
+        
+        with ui.column().style('gap: 300px'):
+            with ui.column():
+                ui.label("Results:").style('font-size: 25px; font-weight: bold; font-family: Comic Sans MS')
+                ui.button("Register")
+            
+            ui.label("Registered For:").style('font-size: 25px; font-weight: bold; font-family: Comic Sans MS')
+                
+
+    #Button to search
+    ui.button("Search", on_click=lambda: ui.notify('You have Searched'))
+    #render_content()
 
 @ui.refreshable
 def render_content():
