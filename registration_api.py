@@ -15,6 +15,7 @@ Endpoints:
     GET  /sections
     GET  /sections/{section_id}
     GET  /my-schedule
+    GET  /wishlist/{wishlist_id}
     POST /register   body: {"section_id": int}
     POST /drop       body: {"section_id": int}
     GET  /announcements
@@ -23,7 +24,7 @@ Endpoints:
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from .database import SECTIONS, ENROLLMENTS, WISHLIST, _next_enrollment_id
+from database import SECTIONS, ENROLLMENTS, Course, Enrollment
 
 app = FastAPI(title="Mock Course Registration API")
 
@@ -38,70 +39,83 @@ app.add_middleware(
 # Routes
 # ---------------------------------------------------------------------
 
-class RegisterRequest(BaseModel):
-    section_id: int
-
-class DropRequest(BaseModel):
-    section_id: int
-
 def _get_section_or_404(section_id: int) -> dict:
     for s in SECTIONS:
-        if s["id"] == section_id:
+        if s.id == section_id:
             return s
     raise HTTPException(status_code=404, detail="Section not found")
 
 def _enrolled_count(section_id: int) -> int:
-    return sum(1 for e in ENROLLMENTS if e["section_id"] == section_id)
+    return sum(1 for e in ENROLLMENTS if e.course.id == section_id)
 
 def _is_enrolled(section_id: int, student: str = "you") -> bool:
-    return any(e["section_id"] == section_id and e["student"] == student for e in ENROLLMENTS)
+    return any(e.course.id == section_id and e.student.lower() == student.lower() for e in ENROLLMENTS)
 
-def _summarize_section(s: dict) -> dict:
-    enrolled = _enrolled_count(s["id"])
-    summary = dict(s)
+def _summarize_section(s: Course) -> dict:
+    enrolled = _enrolled_count(s.id)
+    summary = s.model_dump()
     summary["enrolled"] = enrolled
-    summary["seats_open"] = s["capacity"] - enrolled
-    summary["you_enrolled"] = _is_enrolled(s["id"])
+    summary["seats_open"] = s.capacity - enrolled
+    summary["you_enrolled"] = _is_enrolled(s.id)
     return summary
+
+def _reindex_enrollments():
+    for idx, e in enumerate(ENROLLMENTS, start=1):
+        e.id = idx
+
+# Endpoints
 
 @app.get("/sections")
 def list_sections():
     return [_summarize_section(s) for s in SECTIONS]
 
-@app.get("/sections/{section_id}")
-def get_section(section_id: int):
-    return _summarize_section(_get_section_or_404(section_id))
+# @app.get("/sections/{section_id}")
+# def get_section(section_id: int):
+#     return _summarize_section(_get_section_or_404(section_id))
 
-# will need to modify later
-@app.get("/my-schedule")
+# need to modify later
+# @app.get("/wishlist/{wishlist_id}")
+# def get_wishlist(wishlist_id: int):
+#     wishlist = []
+#     for w in WISHLIST:
+#         if w.id == wishlist_id:
+#             for section_id in w.course.id:
+#                 section = _get_section_or_404(section_id)
+#                 wishlist.append(section)
+#     return [_summarize_section(s) for s in wishlist]
+
+# my-schdule == enrollments
+@app.get("/enrollments")
 def get_my_schedule():
-    mine = [e for e in ENROLLMENTS if e["student"] == "you"]
-    enriched = []
-    for e in mine:
-        section = _get_section_or_404(e["section_id"])
-        enriched.append({**e, **_summarize_section(section)})
-    return enriched
+    return [
+        {
+            "enrollment_id": e.id,
+            "student": e.student,
+            "course": _summarize_section(_get_section_or_404(e.course.id)),
+        }
+        for e in ENROLLMENTS if e.student.lower() == "you"
+    ]
 
-@app.post("/register")
-def register(req: RegisterRequest):
-    global _next_enrollment_id
-    section = _get_section_or_404(req.section_id)
-    if _is_enrolled(section["id"]):
+@app.post("/register/{section_id}")
+def register(section_id: int):
+    section = _get_section_or_404(section_id)
+    if _is_enrolled(section.id):
         raise HTTPException(status_code=400, detail="Already registered for this section")
-    if _enrolled_count(section["id"]) >= section["capacity"]:
-        raise HTTPException(status_code=400, detail=f'{section["code"]} is full')
+    if _enrolled_count(section.id) >= section.capacity:
+        raise HTTPException(status_code=400, detail=f'{section.department} ({section.course_num}, {section.section_num}) is full')
 
-    new_enrollment = {"id": _next_enrollment_id, "section_id": section["id"], "student": "you"}
+    new_enrollment = Enrollment(id=len(ENROLLMENTS) + 1, course=section, student="You")
     ENROLLMENTS.append(new_enrollment)
-    _next_enrollment_id += 1
+    _reindex_enrollments()
     return new_enrollment
 
-@app.post("/drop")
-def drop(req: DropRequest):
+@app.delete("/drop/{section_id}")
+def drop(section_id: int):
     for i, e in enumerate(ENROLLMENTS):
-        if e["section_id"] == req.section_id and e["student"] == "you":
+        if e.course.id == section_id and e.student.lower() == "you":
             ENROLLMENTS.pop(i)
-            return {"dropped": req.section_id}
+            _reindex_enrollments()
+            return {"dropped": section_id}
     raise HTTPException(status_code=404, detail="You are not registered for this section")
 
 if __name__ == "__main__":

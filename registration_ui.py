@@ -53,7 +53,62 @@ def drop_section(section_id: int):
 
 @ui.page("/")
 def main_page():
-    render_content()
+
+    drawer = ui.left_drawer().props("width=110")
+    drawer.style('background-color: #003591')
+
+    #sidebar with leftdrawer
+    with drawer.classes("w-1/10 items-center"):
+        ui.image('images/unh_logo.png').classes('w-20')
+
+        #way to be able to click on images
+        #TODO: in future need to change this for all images and make them display a different page
+        #for each respective image
+        ui.interactive_image('images/pencil.png') \
+            .on('click', lambda e: ui.notify('You clicked an Image!', timeout = 2000)).classes('w-full cursor-pointer')
+        ui.label('Register').classes('text-white').style("font-weight: bold;")
+
+        ui.image('images/light.png').classes('w-full')
+        ui.label('Plan').classes('text-white').style("font-weight: bold;")
+
+        ui.image('images/calendar.png').classes('w-full')
+        ui.label('Schedule').classes('text-white').style("font-weight: bold;")
+
+        ui.image('images/question.png').classes('w-full')
+        ui.label('FAQ').classes('text-white').style("font-weight: bold;")
+
+    #The main register page
+    with ui.row().classes('w-full bg-blue-100 p-4'):
+        ui.label("Register").style('font-size: 45px; font-weight: bold; font-family: Arial')
+
+    with ui.row().classes('w-screen h-screen p-4'):    
+        # Column 1
+        with ui.column().classes("w-4/10 h-full bg-blue-100 p-4"):
+            ui.label("Search on Course Title").style('font-size: 25px; font-weight: bold; font-family: Arial')
+            ui.input(placeholder="Ex: Math 425").classes('bg-white border-2 border-blue-500 rounded-md px-2 width-50')
+
+            ui.label("Search on CRN").style('font-size: 25px; font-weight: bold; font-family: Arial')
+            ui.input(placeholder="Ex: 7324246").classes('bg-white border-2 border-blue-500 rounded-md px-2 width-50')
+
+            ui.label("Search From Wishlist").style('font-size: 25px; font-weight: bold; font-family: Arial')
+            with ui.dropdown_button('Select Wishlist', auto_close=True):
+                ui.item('Wishlist 1', on_click=lambda: ui.notify('You clicked item 1'))
+                ui.item('Wishlist 2', on_click=lambda: ui.notify('You clicked item 2'))
+                ui.item('Wishlist 3', on_click=lambda: ui.notify('You clicked item 2'))            
+            
+            #Button to search
+            ui.button("Search", on_click=lambda: ui.notify('You have Searched')).classes('w-25 h-12 ml-auto mt-40')
+            #render_content()
+                
+        
+        with ui.column().classes("w-5/10 h-full bg-blue-100 p-4"):
+            with ui.card().classes('w-full h-2/5'):
+                ui.label("Results:").style('font-size: 25px; font-weight: bold; font-family: Arial')
+                ui.button("Register")
+
+            with ui.card().classes('w-full h-1/2'):
+                ui.label("Registered For:").classes("mt-6").style('font-size: 25px; font-weight: bold; font-family: Arial')
+             
 
 @ui.refreshable
 def render_content():
