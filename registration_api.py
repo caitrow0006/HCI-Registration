@@ -23,7 +23,7 @@ Endpoints:
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from .database import SECTIONS, ENROLLMENTS, _next_enrollment_id
+from .database import SECTIONS, ENROLLMENTS, WISHLIST, _next_enrollment_id
 
 app = FastAPI(title="Mock Course Registration API")
 
