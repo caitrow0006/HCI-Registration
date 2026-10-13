@@ -51,9 +51,7 @@ def drop_section(section_id: int):
         ui.notify("Dropped", type="warning")
         render_content.refresh()
 
-@ui.page("/")
-def main_page():
-
+def render_sidebar():
     drawer = ui.left_drawer().props("width=110")
     drawer.style('background-color: #003591')
 
@@ -75,8 +73,9 @@ def main_page():
         ui.label('Schedule').classes('text-white').style("font-weight: bold;")
 
         ui.image('images/question.png').classes('w-full')
-        ui.label('FAQ').classes('text-white').style("font-weight: bold;")
+        ui.label('FAQ').classes('text-white').style("font-weight: bold;")    
 
+def render_register_page():
     #The main register page
     with ui.row().classes('w-full bg-blue-100 p-4'):
         ui.label("Register").style('font-size: 45px; font-weight: bold; font-family: Arial')
@@ -108,49 +107,54 @@ def main_page():
 
             with ui.card().classes('w-full h-1/2'):
                 ui.label("Registered For:").classes("mt-6").style('font-size: 25px; font-weight: bold; font-family: Arial')
+@ui.page("/")
+def main_page():
+    render_sidebar()
+    render_register_page()
+    
              
 
-@ui.refreshable
-def render_content():
-    ui.label("Course Registration").classes("text-2xl")
+# @ui.refreshable
+# def render_content():
+#     ui.label("Course Registration").classes("text-2xl")
 
-    with ui.row().classes("w-full no-wrap"):
-        with ui.column().classes("w-1/2 p-2"):
-            render_sections()
-        with ui.column().classes("w-1/2 p-2"):
-            render_my_schedule()
-            render_announcements()
+#     with ui.row().classes("w-full no-wrap"):
+#         with ui.column().classes("w-1/2 p-2"):
+#             render_sections()
+#         with ui.column().classes("w-1/2 p-2"):
+#             render_my_schedule()
+#             render_announcements()
 
-def render_sections():
-    ui.label("Available Sections").classes("text-lg")
-    sections = api_get("/sections")
-    for s in sections:
-        with ui.row().classes("items-center"):
-            label = (
-                f'{s["code"]} - {s["title"]} - {s["instructor"]} - {s["meets"]} '
-                f'- {s["seats_open"]}/{s["capacity"]} seats open'
-            )
-            ui.label(label)
-            if s["you_enrolled"]:
-                ui.button("Drop", on_click=lambda sid=s["id"]: drop_section(sid))
-            else:
-                ui.button("Register", on_click=lambda sid=s["id"]: register_section(sid))
+# def render_sections():
+#     ui.label("Available Sections").classes("text-lg")
+#     sections = api_get("/sections")
+#     for s in sections:
+#         with ui.row().classes("items-center"):
+#             label = (
+#                 f'{s["code"]} - {s["title"]} - {s["instructor"]} - {s["meets"]} '
+#                 f'- {s["seats_open"]}/{s["capacity"]} seats open'
+#             )
+#             ui.label(label)
+#             if s["you_enrolled"]:
+#                 ui.button("Drop", on_click=lambda sid=s["id"]: drop_section(sid))
+#             else:
+#                 ui.button("Register", on_click=lambda sid=s["id"]: register_section(sid))
 
-def render_my_schedule():
-    ui.label("My Schedule").classes("text-lg")
-    schedule = api_get("/my-schedule")
-    if not schedule:
-        ui.label("You aren't registered for anything yet.")
-        return
-    for s in schedule:
-        ui.label(f'{s["code"]} - {s["title"]} - {s["meets"]}')
+# def render_my_schedule():
+#     ui.label("My Schedule").classes("text-lg")
+#     schedule = api_get("/my-schedule")
+#     if not schedule:
+#         ui.label("You aren't registered for anything yet.")
+#         return
+#     for s in schedule:
+#         ui.label(f'{s["code"]} - {s["title"]} - {s["meets"]}')
 
-def render_announcements():
-    ui.label("Announcements").classes("text-lg")
-    announcements = api_get("/announcements")
-    for a in announcements:
-        ui.label(a["title"])
-        ui.label(a["body"])
-        ui.separator()
+# def render_announcements():
+#     ui.label("Announcements").classes("text-lg")
+#     announcements = api_get("/announcements")
+#     for a in announcements:
+#         ui.label(a["title"])
+#         ui.label(a["body"])
+#         ui.separator()
 
 ui.run(port=8084, title="Course Registration")
