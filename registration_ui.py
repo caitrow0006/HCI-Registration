@@ -18,6 +18,8 @@ from nicegui import ui
 
 API_BASE = "http://localhost:8005"
 
+enrollments = []
+
 def api_get(path: str):
     try:
         resp = requests.get(f"{API_BASE}{path}", timeout=5)
@@ -75,6 +77,27 @@ def render_sidebar():
         ui.image('images/question.png').classes('w-full')
         ui.label('FAQ').classes('text-white').style("font-weight: bold;")    
 
+def get_enrollments():
+    global enrollments
+    enrollments = api_get("/enrollments")
+    render_enrollments.refresh()
+        
+@ui.refreshable
+def render_enrollments():
+    course = []
+    title = ""
+    department = ""
+    course_num = ""
+    section_num = ""
+    for enrollment in enrollments:
+        course = enrollment['course']
+        title = course['title']
+        department = course['department']
+        course_num = str(course['course_num'])
+        section_num = str(course['section_num'])
+        instructor = str(course['instructor'])
+        ui.label(f"{department}{course_num} {title} Section: {section_num} Taught by: {instructor}")
+
 def render_register_page():
     #The main register page
     with ui.row().classes('w-full bg-blue-100 p-4'):
@@ -103,10 +126,11 @@ def render_register_page():
         with ui.column().classes("w-5/10 h-full bg-blue-100 p-4"):
             with ui.card().classes('w-full h-2/5'):
                 ui.label("Results:").style('font-size: 25px; font-weight: bold; font-family: Arial')
-                ui.button("Register")
+                ui.button("Register", on_click=lambda: get_enrollments())
 
             with ui.card().classes('w-full h-1/2'):
                 ui.label("Registered For:").classes("mt-6").style('font-size: 25px; font-weight: bold; font-family: Arial')
+                render_enrollments()
 @ui.page("/")
 def main_page():
     render_sidebar()
