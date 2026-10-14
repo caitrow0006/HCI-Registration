@@ -80,11 +80,32 @@ def get_sections(course_title: str, crn: str):
         #filter courses
         filtered = sections.copy()
         for section in sections:
+            #ui.notify(section)
             for token in search_split:
-                if (isinstance(token, str)):
-                    #TODO: pickup here --> make filtering work with multiple tokens
-                    if (section["department"] != str(token)):
-                        filtered.remove(section)
+                if (token.isnumeric() == False):
+                    #ui.notify("token not numeric: " + token)
+                    if (section["department"] != token.upper()): #TODO: convert to upper for flexibility!
+                        if section in filtered:
+                            filtered.remove(section)
+                        
+                elif len(token) == 3: #course numbers are always 3 digits
+                    #ui.notify("course num token: " + token + str(section["course_num"]))
+                    if (str(section["course_num"]) != token):
+                        if section in filtered:
+                            filtered.remove(section)
+                        
+                elif len(token) < 3: #section numbers are always 2 or less digits
+                    if (section["section_num"] != int(token)):
+                        if section in filtered:
+                            filtered.remove(section)
+                        
+                else:
+                    #invalid token, skip
+                    #ui.notify("invalid token: " + token)
+                    continue;
+                    
+                    
+                    
         ui.notify(filtered)
             
     elif course_title == "":
