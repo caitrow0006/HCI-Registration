@@ -19,6 +19,7 @@ from nicegui import ui
 
 API_BASE = "http://localhost:8005"
 search_results = []
+enrollments = []
 
 def api_get(path: str):
     try:
@@ -254,7 +255,7 @@ def render_register_page():
             with ui.card().classes('w-full h-2/5'):
                 ui.label("Results:").style('font-size: 25px; font-weight: bold; font-family: Arial')
                 render_search_results()
-                ui.button("Register")
+                ui.button("Register", on_click=lambda: get_enrollments())
 
             with ui.card().classes('w-full h-1/2'):
                 ui.label("Registered For:").classes("mt-6").style('font-size: 25px; font-weight: bold; font-family: Arial')
