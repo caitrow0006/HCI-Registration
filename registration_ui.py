@@ -18,6 +18,7 @@ import re
 from nicegui import ui
 
 API_BASE = "http://localhost:8005"
+search_results = []
 
 def api_get(path: str):
     try:
@@ -41,76 +42,133 @@ def api_post(path: str, json: dict):
             pass
         ui.notify(detail or f"Request failed: {e}", type="negative")
         return False
-        
+      
+def search_on_crn(sections:dict, filtered:dict, crn:int):
+    #ui.notify("searching on crn")
+    if (crn.isnumeric() == False) or (len(crn) != 5):
+        #TODO: INFORM USER OF ERROR
+        ui.notify("ERROR: Invalid CRN entered. Must be a 5 digit number.")
+    else:
+        for section in sections:
+            if (section["crn"] != int(crn)):
+                if section in filtered:
+                    filtered.remove(section)
+    #ui.notify(filtered);
+    
+def search_on_name(sections:dict, filtered:dict, course_title:str):
+    #ui.notify("searching on title")
+    """
+    from Regex 101:
+    1st Alternative
+    [\s\W_]+
+        + --> matches at least one character from the set below:
+        \s --> any whitespace character
+        \W --> any non-word character (punctuation)
+        _ --> the literal _ (9510 / 1378 / 5F16)
+    2nd Alternative
+    (?<=[a-zA-Z])(?=\d)
+        Positive Lookbehind --> (?<=)
+            [a-zA-Z] --> a-z and A-Z
+        Positive Lookahead --> (?=)
+            \d --> is digit (number)
+    3rd Alternative
+    (?<=\d)(?=[a-zA-Z])
+        Positive Lookbehind --> (?<=)
+            \d --> is digit (number)
+        Positive Lookahead --> (?=)
+            [a-zA-Z] --> a-z and A-Z
+    """
+    #split input --> be liberal in what you accept
+    search_split = re.split(r'[\s\W_]+|(?<=[a-zA-Z])(?=\d)|(?<=\d)(?=[a-zA-Z])', course_title) #splits on space or period
+    #ui.notify(search_split) #debugging
+    
+    #filter courses
+    for section in sections:
+        #ui.notify(section)
+        for token in search_split:
+            if (token.isnumeric() == False):
+                #ui.notify("token not numeric: " + token)
+                if (section["department"] != token.upper()): #TODO: convert to upper for flexibility!
+                    if section in filtered:
+                        filtered.remove(section)
+                    
+            elif len(token) == 3: #course numbers are always 3 digits
+                #ui.notify("course num token: " + token + str(section["course_num"]))
+                if (str(section["course_num"]) != token):
+                    if section in filtered:
+                        filtered.remove(section)
+                    
+            elif len(token) < 3: #section numbers are always 2 or less digits
+                if (section["section_num"] != int(token)):
+                    if section in filtered:
+                        filtered.remove(section)
+                    
+            else:
+                #invalid token, skip
+                #ui.notify("invalid token: " + token)
+                continue;
+                    
+    #ui.notify(filtered)
+    
 #TODO: get rid of ui.notify debugging calls
 def get_sections(course_title: str, crn: str):
     sections = api_get("/sections");
+    search_results.clear()
+    filtered = sections.copy()
+    filter_issue = "No such courses exist. Please search for a different course."
     #ui.notify(sections)
-    ui.notify(course_title)
-    ui.notify(crn)
+    #ui.notify(course_title)
+    #ui.notify(crn)
     
+    #nothing was entered
+    if crn == "" and course_title == "":
+        #TODO: handle error better
+        ui.notify("ERROR: Nothing was entered into search. Enter a course name (ex. Math425.01) or a 5 digit crn (ex. 12345)")
+        return
     #no crn was entered
-    if crn == "":
-        ui.notify("searching on title")
-        """
-        from Regex 101:
-        1st Alternative
-        [\s\W_]+
-            + --> matches at least one character from the set below:
-            \s --> any whitespace character
-            \W --> any non-word character (punctuation)
-            _ --> the literal _ (9510 / 1378 / 5F16)
-        2nd Alternative
-        (?<=[a-zA-Z])(?=\d)
-            Positive Lookbehind --> (?<=)
-                [a-zA-Z] --> a-z and A-Z
-            Positive Lookahead --> (?=)
-                \d --> is digit (number)
-        3rd Alternative
-        (?<=\d)(?=[a-zA-Z])
-            Positive Lookbehind --> (?<=)
-                \d --> is digit (number)
-            Positive Lookahead --> (?=)
-                [a-zA-Z] --> a-z and A-Z
-        """
-        #split input --> be liberal in what you accept
-        search_split = re.split(r'[\s\W_]+|(?<=[a-zA-Z])(?=\d)|(?<=\d)(?=[a-zA-Z])', course_title) #splits on space or period
-        ui.notify(search_split) #debugging
-        
-        #filter courses
-        filtered = sections.copy()
-        for section in sections:
-            #ui.notify(section)
-            for token in search_split:
-                if (token.isnumeric() == False):
-                    #ui.notify("token not numeric: " + token)
-                    if (section["department"] != token.upper()): #TODO: convert to upper for flexibility!
-                        if section in filtered:
-                            filtered.remove(section)
-                        
-                elif len(token) == 3: #course numbers are always 3 digits
-                    #ui.notify("course num token: " + token + str(section["course_num"]))
-                    if (str(section["course_num"]) != token):
-                        if section in filtered:
-                            filtered.remove(section)
-                        
-                elif len(token) < 3: #section numbers are always 2 or less digits
-                    if (section["section_num"] != int(token)):
-                        if section in filtered:
-                            filtered.remove(section)
-                        
-                else:
-                    #invalid token, skip
-                    #ui.notify("invalid token: " + token)
-                    continue;
-                    
-                    
-                    
-        ui.notify(filtered)
-            
+    elif crn == "":
+        search_on_name(sections, filtered, course_title)
+          
+    #no course title was entered
     elif course_title == "":
-        ui.notify("searching on crn")
-    #filter what we want
+        search_on_crn(sections, filtered, crn)
+        
+    else: #both fields, default is to search on CRN
+        #search first on CRN
+        search_on_crn(sections, filtered, crn)
+        #if that search yeilded nothing, search on name
+        if len(filtered) == 0:
+            filtered = sections.copy()
+            search_on_name(sections, filtered, course_title)
+            
+    if len(filtered) == 0:
+        #TODO: handle error better?
+        ui.notify(filter_issue)
+     
+    for result in filtered:
+        search_results.append(result)
+    
+    render_search_results.refresh()
+        
+@ui.refreshable
+def render_search_results():
+    course = []
+    title = ""
+    department = ""
+    course_num = ""
+    section_num = ""
+#    ui.notify("search result: " )
+#    ui.notify(search_results )
+    for result in search_results:
+        title = result['title']
+        department = result['department']
+        course_num = str(result['course_num'])
+        section_num = str(result['section_num'])
+        instructor = str(result['instructor'])
+        #TODO:Add selectable radio buttons
+        #ui.notify(f"{department}{course_num} {title} Section: {section_num} Taught by: {instructor}")
+        ui.label(f"{department}{course_num} {title} Section: {section_num} Taught by: {instructor}")
+
 
 def register_section(section_id: int):
     if api_post("/register", {"section_id": section_id}):
@@ -158,7 +216,7 @@ def render_register_page():
             course_name_input = ui.input(placeholder="Ex: Math 425").classes('bg-white border-2 border-blue-500 rounded-md px-2 width-50')
 
             ui.label("Search on CRN").style('font-size: 25px; font-weight: bold; font-family: Arial')
-            crn_input = ui.input(placeholder="Ex: 7324246").classes('bg-white border-2 border-blue-500 rounded-md px-2 width-50')
+            crn_input = ui.input(placeholder="Ex: 73242").classes('bg-white border-2 border-blue-500 rounded-md px-2 width-50')
 
             ui.label("Search From Wishlist").style('font-size: 25px; font-weight: bold; font-family: Arial')
             with ui.dropdown_button('Select Wishlist', auto_close=True):
@@ -174,6 +232,7 @@ def render_register_page():
         with ui.column().classes("w-5/10 h-full bg-blue-100 p-4"):
             with ui.card().classes('w-full h-2/5'):
                 ui.label("Results:").style('font-size: 25px; font-weight: bold; font-family: Arial')
+                render_search_results()
                 ui.button("Register")
 
             with ui.card().classes('w-full h-1/2'):
