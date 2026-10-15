@@ -19,6 +19,11 @@ from nicegui import ui
 
 API_BASE = "http://localhost:8005"
 search_results = []
+query = None
+options = []
+selected = []
+enrollments = []
+register_button = None
 
 def api_get(path: str):
     try:
@@ -42,6 +47,21 @@ def api_post(path: str, json: dict):
             pass
         ui.notify(detail or f"Request failed: {e}", type="negative")
         return False
+        
+def api_delete(path:str , json: dict):
+    try:
+        resp = requests.delete(f"{API_BASE}{path}", json=json, timeout=5)
+        resp.raise_for_status()
+        return True
+    except requests.RequestException as e:
+        detail = ""
+        try:
+            detail = e.response.json().get("detail", "")
+        except Exception:
+            pass
+        ui.notify(detail or f"Request failed: {e}", type="negative")
+        return False
+
       
 def search_on_crn(sections:dict, filtered:dict, crn:int):
     #ui.notify("searching on crn")
@@ -112,6 +132,9 @@ def search_on_name(sections:dict, filtered:dict, course_title:str):
     
 #TODO: get rid of ui.notify debugging calls
 def get_sections(course_title: str, crn: str):
+    global search_results
+    global query
+    query = (course_title, crn)
     sections = api_get("/sections");
     search_results.clear()
     filtered = sections.copy()
@@ -123,8 +146,9 @@ def get_sections(course_title: str, crn: str):
     #nothing was entered
     if crn == "" and course_title == "":
         #TODO: handle error better
+        search_results = sections.copy()
         ui.notify("ERROR: Nothing was entered into search. Enter a course name (ex. Math425.01) or a 5 digit crn (ex. 12345)")
-        return
+        #return
     #no crn was entered
     elif crn == "":
         search_on_name(sections, filtered, course_title)
@@ -149,9 +173,48 @@ def get_sections(course_title: str, crn: str):
         search_results.append(result)
     
     render_search_results.refresh()
+    
+def toggle_register_button(e=None):
+    #https://nicegui.io/documentation/generic_events
+
+    global selected
+    selected = [item for item in options if item[1].value] #selected is checked items only
+    #ui.notify(selected)
+    num_checked = len(selected)
+    num_enrolled = 0;
+    for item in selected:
+        if item[0]["you_enrolled"]:
+            num_enrolled = num_enrolled + 1
+    #ui.notify(num_checked)
+    #ui.notify(num_enrolled)
+
+    #nothing selected or number enrooled selection is less than num total selections
+    if num_checked == 0 or 0 < num_enrolled < num_checked:
+        register_button.disable()
+        #https://nicegui.io/documentation/button
+        register_button.props("color=grey")
+        register_button.set_text(f"Register ({num_checked} selected)")
+        
+    #all selected are ones you arent enrolled in
+    elif num_enrolled == 0:
+        ui.notify("all selection are not enrolled in")
+        register_button.enable()
+        register_button.props("color=blue")
+        register_button.set_text(f"Register ({num_checked} selected)")
+     
+    #all selected one we are enrolled in
+    else:
+        register_button.enable()
+        register_button.props("color=red")
+        register_button.set_text(f"Drop ({num_checked} selected)")
+    
+    #ui.notify(selected)
+
+    
         
 @ui.refreshable
 def render_search_results():
+    options.clear()
     course = []
     title = ""
     department = ""
@@ -167,18 +230,62 @@ def render_search_results():
         instructor = str(result['instructor'])
         #TODO:Add selectable radio buttons
         #ui.notify(f"{department}{course_num} {title} Section: {section_num} Taught by: {instructor}")
-        ui.label(f"{department}{course_num} {title} Section: {section_num} Taught by: {instructor}")
+        with ui.row().classes("w-full items-center no-wrap bg-gray-100 rounded") as row:
+            #checkbox = ui.checkbox()
+            checkbox = ui.checkbox(on_change=toggle_register_button)
+            label = ui.label(
+                f"{department}{course_num} {title} Section: {section_num} Taught by: {instructor}"
+            ).classes("flex-grow") #fill available space
+        options.append((result, checkbox, label))
+        
+    #check since i declared it as none uptop
+    if register_button is not None:
+        toggle_register_button()
 
+def add_drop_selections():
+    for item in selected:
+        is_add = False
+        is_drop = False
+        #should all be either add or drop, but it's good to check anyways
+        if item[0]["you_enrolled"]:
+            is_drop = True
+        else:
+            is_add = True
+            
+    #ui.notify(selected)
+    if is_add and is_drop:
+        #TODO: Handle error better..?
+        ui.notify("Error: Selected courses contain a mix of registered and unregistered courses.")
+    elif is_add:
+        register_selected()
+    elif is_drop:
+        drop_selected()
+    else:
+        ui.notify("Error: Nothing selected")
+        
+    #TODO: Not sure of this is right
+    get_sections(query[0], query[1])
+    get_enrollments()
+        
+def register_selected():
+    #ui.notify(selected)
+    for item in selected:
+        #ui.notify(item[0]["id"])
+        id = item[0]["id"]
+        if api_post(f"/register/{id}", {"section_id": int(item[0]["id"])}):
+            ui.notify("Registered", type="positive")
+            #render_enrollments.refresh()
+            #render_search_results.refresh()
+    #TODO: Not sure of this is right
+    get_enrollments()
 
-def register_section(section_id: int):
-    if api_post("/register", {"section_id": section_id}):
-        ui.notify("Registered", type="positive")
-        render_content.refresh()
-
-def drop_section(section_id: int):
-    if api_post("/drop", {"section_id": section_id}):
-        ui.notify("Dropped", type="warning")
-        render_content.refresh()
+def drop_selected():
+    #ui.notify(selected)
+    for item in selected:
+        #ui.notify(item[0]["id"])
+        id = item[0]["id"]
+        if api_delete(f"/drop/{id}", {"section_id": int(item[0]["id"])}):
+            ui.notify("Dropped", type="warning")
 
 def render_sidebar():
     drawer = ui.left_drawer().props("width=110")
@@ -204,7 +311,31 @@ def render_sidebar():
         ui.image('images/question.png').classes('w-full')
         ui.label('FAQ').classes('text-white').style("font-weight: bold;")    
 
+def get_enrollments():
+    global enrollments
+    enrollments = api_get("/enrollments")
+    render_enrollments.refresh()
+        
+@ui.refreshable
+def render_enrollments():
+    course = []
+    title = ""
+    department = ""
+    course_num = ""
+    section_num = ""
+    for enrollment in enrollments:
+        course = enrollment['course']
+        title = course['title']
+        department = course['department']
+        course_num = str(course['course_num'])
+        section_num = str(course['section_num'])
+        instructor = str(course['instructor'])
+        ui.label(f"{department}{course_num} {title} Section: {section_num} Taught by: {instructor}")
+
 def render_register_page():
+    #to overshadow the one uptop
+    global register_button
+    
     #The main register page
     with ui.row().classes('w-full bg-blue-100 p-4'):
         ui.label("Register").style('font-size: 45px; font-weight: bold; font-family: Arial')
@@ -233,10 +364,13 @@ def render_register_page():
             with ui.card().classes('w-full h-2/5'):
                 ui.label("Results:").style('font-size: 25px; font-weight: bold; font-family: Arial')
                 render_search_results()
-                ui.button("Register")
+                register_button = ui.button("Register", on_click=lambda: ( (get_enrollments(), add_drop_selections())
+                ))
+                toggle_register_button()
 
             with ui.card().classes('w-full h-1/2'):
                 ui.label("Registered For:").classes("mt-6").style('font-size: 25px; font-weight: bold; font-family: Arial')
+                render_enrollments()
 @ui.page("/")
 def main_page():
     render_sidebar()
