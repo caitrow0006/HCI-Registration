@@ -25,6 +25,7 @@ selected = []
 enrollments = []
 wishlists = []
 register_button = None
+select_all_button = None
 
 def api_get(path: str):
     try:
@@ -147,8 +148,8 @@ def get_sections(course_title: str, crn: str):
     #nothing was entered
     if crn == "" and course_title == "":
         #TODO: handle error better
-        search_results = sections.copy()
-        ui.notify("ERROR: Nothing was entered into search. Enter a course name (ex. Math425.01) or a 5 digit crn (ex. 12345)")
+        search_results = [] #placeholder
+        #ui.notify("ERROR: Nothing was entered into search. Enter a course name (ex. Math425.01) or a 5 digit crn (ex. 12345)")
         #return
     #no crn was entered
     elif crn == "":
@@ -183,6 +184,7 @@ def toggle_register_button(e=None):
     #ui.notify(selected)
     num_checked = len(selected)
     num_enrolled = 0;
+    
     for item in selected:
         if item[0]["you_enrolled"]:
             num_enrolled = num_enrolled + 1
@@ -193,12 +195,14 @@ def toggle_register_button(e=None):
     if num_checked == 0 or 0 < num_enrolled < num_checked:
         register_button.disable()
         #https://nicegui.io/documentation/button
+        if num_checked != 0:
+            ui.notify("WARNING: Cannot add/drop selected courses as 1 or more course is already added")
         register_button.props("color=grey")
         register_button.set_text(f"Register ({num_checked} selected)")
         
     #all selected are ones you arent enrolled in
     elif num_enrolled == 0:
-        ui.notify("all selection are not enrolled in")
+        #ui.notify("all selection are not enrolled in")
         register_button.enable()
         register_button.props("color=blue")
         register_button.set_text(f"Register ({num_checked} selected)")
@@ -252,11 +256,34 @@ def render_search_results():
     #check since i declared it as none uptop
     if register_button is not None:
         toggle_register_button()
+        
+    if select_all_button is not None:
+        refesh_select_all_button()
+    
+@ui.refreshable
+def refesh_select_all_button():
+    select_all_button.set_text(f"Select All")
+    select_all.checked = False
+    
+def select_all():
+    if select_all.checked == False:
+        for item in options:
+            item[1].value=True;
+        select_all.checked = True
+        select_all_button.set_text(f"Deselect All")
+    else:
+        for item in options:
+            item[1].value=False;
+        select_all.checked = False
+        select_all_button.set_text(f"Select All")
+select_all.checked = False
+    
 
 def add_drop_selections():
+
+    is_add = False
+    is_drop = False
     for item in selected:
-        is_add = False
-        is_drop = False
         #should all be either add or drop, but it's good to check anyways
         if item[0]["you_enrolled"]:
             is_drop = True
@@ -289,8 +316,6 @@ def register_selected():
         ui.notify("Registered", type="positive")
             #render_enrollments.refresh()
             #render_search_results.refresh()
-    #TODO: Not sure of this is right
-    get_enrollments()
 
 def drop_selected():
     ids = [int(item[0]["id"]) for item in selected]
@@ -318,7 +343,7 @@ def render_sidebar():
         #TODO: in future need to change this for all images and make them display a different page
         #for each respective image
         ui.interactive_image('images/pencil.png') \
-            .on('click', lambda e: ui.notify('You clicked an Image!', timeout = 2000)).classes('w-full cursor-pointer')
+            .on('click', lambda e: (get_sections("",""), render_register_page.refresh())).classes('w-full cursor-pointer')
         ui.label('Register').classes('text-white').style("font-weight: bold;")
 
         ui.image('images/light.png').classes('w-full')
@@ -351,12 +376,14 @@ def render_enrollments():
         instructor = str(course['instructor'])
         ui.label(f"{department}{course_num} {title} Section: {section_num} Taught by: {instructor}")
 
+@ui.refreshable
 def render_register_page():
     #to overshadow the one uptop
     global register_button
+    global select_all_button
     
     #The main register page
-    with ui.row().classes('w-full pl-4'):
+    with ui.row().classes('w-[1380px] pl-4'):
         with ui.row().classes('w-full bg-blue-100 p-4'):
             ui.label("Register").style('font-size: 45px; font-weight: bold; font-family: Arial')
 
@@ -384,7 +411,7 @@ def render_register_page():
                         )
             
             #Button to search
-            search_sections_btn = ui.button("Search", on_click=lambda: (get_sections(course_name_input.value, crn_input.value))).classes('w-25 h-12 ml-auto mt-40')
+            search_sections_btn = ui.button("Search", on_click=lambda: (get_sections(course_name_input.value, crn_input.value))).classes('w-25 h-12 mr-auto mt-40')
             #render_content()
                 
         
@@ -393,17 +420,26 @@ def render_register_page():
                 ui.label("Results:").style('font-size: 25px; font-weight: bold; font-family: Arial')
                 with ui.scroll_area():
                     render_search_results()
-                register_button = ui.button("Register", on_click=lambda: ( (get_enrollments(), add_drop_selections())
-                ))
-                toggle_register_button()
+                    
+                with ui.row():
+                    register_button = ui.button("Register", on_click=lambda: ( (get_enrollments(), add_drop_selections())
+                    ))
+                    toggle_register_button()
+                    select_all_button = ui.button("Select All", on_click=lambda: ( (select_all())
+                    ))
 
-            with ui.card().classes('w-full h-1/2'):
-                ui.label("Registered For:").classes("mt-6").style('font-size: 25px; font-weight: bold; font-family: Arial')
-                render_enrollments()
+            with ui.card().classes('w-full h-[220px]'):
+                ui.label("Registered For:").style('font-size: 25px; font-weight: bold; font-family: Arial')
+                get_enrollments()
+                with ui.scroll_area():
+                    render_enrollments()
 @ui.page("/")
 def main_page():
     render_sidebar()
     render_register_page()
+    #TODO: Wdo we want this..?
+    #when page is loaded, show all courses
+    get_sections("", "")
     ui.query('body').style('margin: 0; overflow: hidden;')
     
              
