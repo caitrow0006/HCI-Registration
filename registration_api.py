@@ -21,10 +21,11 @@ Endpoints:
     GET  /announcements
 """
 
-from fastapi import FastAPI, HTTPException
+from fastapi import Body, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from database import SECTIONS, ENROLLMENTS, WISHLIST, Course, Enrollment, Wishlist_item
+from typing import List
 
 app = FastAPI(title="Mock Course Registration API")
 
@@ -102,32 +103,44 @@ def get_my_schedule():
         {
             "enrollment_id": e.id,
             "student": e.student,
-            "course": _summarize_section(_get_section_or_404(e.course.id)),
+            "course": _summarize_section(e.course),
         }
         for e in ENROLLMENTS if e.student.lower() == "you"
     ]
 
-@app.post("/register/{section_id}")
-def register(section_id: int):
-    section = _get_section_or_404(section_id)
-    if _is_enrolled(section.id):
-        raise HTTPException(status_code=400, detail="Already registered for this section")
-    if _enrolled_count(section.id) >= section.capacity:
-        raise HTTPException(status_code=400, detail=f'{section.department} ({section.course_num}, {section.section_num}) is full')
+@app.post("/register")
+def register(section_id: list[int] = Body(...)):
+    section_to_register = []
+    for sid in section_id:
+        section = _get_section_or_404(sid)
+        if _is_enrolled(section.id):
+            raise HTTPException(status_code=400, detail="Already registered for this section")
+        if _enrolled_count(section.id) >= section.capacity:
+            raise HTTPException(
+                status_code=400, 
+                detail=f'{section.department} ({section.course_num}, {section.section_num}) is full'
+            )
+        section_to_register.append(section)
+    new_enrollments = []
+    for section in section_to_register:
+        new_enrollment = Enrollment(id=len(ENROLLMENTS) + 1, course=section, student="You")
+        ENROLLMENTS.append(new_enrollment)
+        new_enrollments.append(new_enrollment)
 
-    new_enrollment = Enrollment(id=len(ENROLLMENTS) + 1, course=section, student="You")
-    ENROLLMENTS.append(new_enrollment)
     _reindex_enrollments()
-    return new_enrollment
+    return new_enrollments
 
-@app.delete("/drop/{section_id}")
-def drop(section_id: int):
-    for i, e in enumerate(ENROLLMENTS):
-        if e.course.id == section_id and e.student.lower() == "you":
-            ENROLLMENTS.pop(i)
-            _reindex_enrollments()
-            return {"dropped": section_id}
-    raise HTTPException(status_code=404, detail="You are not registered for this section")
+@app.delete("/drop")
+def drop(section_id: list[int] = Body(...)):
+    dropped_sections = []
+    for sid in section_id:
+        for i, e in enumerate(ENROLLMENTS):
+            if e.course.id == sid and e.student.lower() == "you":
+                ENROLLMENTS.pop(i)
+                dropped_sections.append(sid)
+                break
+    _reindex_enrollments()
+    return {"dropped": dropped_sections}
 
 if __name__ == "__main__":
     import uvicorn
