@@ -333,7 +333,7 @@ def render_sidebar():
         #TODO: in future need to change this for all images and make them display a different page
         #for each respective image
         ui.interactive_image('images/pencil.png') \
-            .on('click', lambda e: (render_register_page.refresh(), search_results.clear(), render_search_results.refresh())).classes('w-full cursor-pointer')
+            .on('click', lambda e: (get_sections("",""), render_register_page.refresh())).classes('w-full cursor-pointer')
         ui.label('Register').classes('text-white').style("font-weight: bold;")
 
         ui.image('images/light.png').classes('w-full')
