@@ -252,7 +252,7 @@ def add_drop_selections():
         else:
             is_add = True
             
-    ui.notify(selected)
+    #ui.notify(selected)
     if is_add and is_drop:
         #TODO: Handle error better..?
         ui.notify("Error: Selected courses contain a mix of registered and unregistered courses.")
