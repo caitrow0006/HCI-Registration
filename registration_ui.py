@@ -148,7 +148,7 @@ def get_sections(course_title: str, crn: str):
         #TODO: handle error better
         search_results = sections.copy()
         ui.notify("ERROR: Nothing was entered into search. Enter a course name (ex. Math425.01) or a 5 digit crn (ex. 12345)")
-        return
+        #return
     #no crn was entered
     elif crn == "":
         search_on_name(sections, filtered, course_title)
