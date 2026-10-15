@@ -337,12 +337,13 @@ def render_register_page():
     global register_button
     
     #The main register page
-    with ui.row().classes('w-full bg-blue-100 p-4'):
-        ui.label("Register").style('font-size: 45px; font-weight: bold; font-family: Arial')
+    with ui.row().classes('w-full pl-4'):
+        with ui.row().classes('w-full bg-blue-100 p-4'):
+            ui.label("Register").style('font-size: 45px; font-weight: bold; font-family: Arial')
 
     with ui.row().classes('w-screen h-screen p-4'):    
         # Column 1
-        with ui.column().classes("w-4/10 h-full bg-blue-100 p-4"):
+        with ui.column().classes("w-4/10 h-[600px] bg-blue-100 p-4"):
             ui.label("Search on Course Title").style('font-size: 25px; font-weight: bold; font-family: Arial')
             course_name_input = ui.input(placeholder="Ex: Math 425").classes('bg-white border-2 border-blue-500 rounded-md px-2 width-50')
 
@@ -360,10 +361,11 @@ def render_register_page():
             #render_content()
                 
         
-        with ui.column().classes("w-5/10 h-full bg-blue-100 p-4"):
-            with ui.card().classes('w-full h-2/5'):
+        with ui.column().classes("w-5/10 h-[600px] bg-blue-100 p-4"):
+            with ui.card().classes('w-full h-3/5'):
                 ui.label("Results:").style('font-size: 25px; font-weight: bold; font-family: Arial')
-                render_search_results()
+                with ui.scroll_area():
+                    render_search_results()
                 register_button = ui.button("Register", on_click=lambda: ( (get_enrollments(), add_drop_selections())
                 ))
                 toggle_register_button()
@@ -375,6 +377,7 @@ def render_register_page():
 def main_page():
     render_sidebar()
     render_register_page()
+    ui.query('body').style('margin: 0; overflow: hidden;')
     
              
 
