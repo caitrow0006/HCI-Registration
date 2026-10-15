@@ -24,7 +24,7 @@ Endpoints:
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from database import SECTIONS, ENROLLMENTS, Course, Enrollment
+from database import SECTIONS, ENROLLMENTS, WISHLIST, Course, Enrollment, Wishlist_item
 
 app = FastAPI(title="Mock Course Registration API")
 
@@ -73,16 +73,27 @@ def list_sections():
 # def get_section(section_id: int):
 #     return _summarize_section(_get_section_or_404(section_id))
 
-# need to modify later
-# @app.get("/wishlist/{wishlist_id}")
-# def get_wishlist(wishlist_id: int):
-#     wishlist = []
-#     for w in WISHLIST:
-#         if w.id == wishlist_id:
-#             for section_id in w.course.id:
-#                 section = _get_section_or_404(section_id)
-#                 wishlist.append(section)
-#     return [_summarize_section(s) for s in wishlist]
+# get wishlist
+@app.get("/wishlists")
+def wishlists():
+    return [
+        {
+            "wishlist_id": w.id,
+            "wishlist_name": w.wishlist,
+        }
+        for w in WISHLIST
+    ]
+
+# get specific wishlist by id, return list of courses in that wishlist
+@app.get("/wishlist/{wishlist_id}")
+def get_wishlist(wishlist_id: int):
+    wishlist = []
+    for w in WISHLIST:
+        if w.id == wishlist_id:
+            for section in w.course:
+                wishlist.append(section)
+            break
+    return [_summarize_section(s) for s in wishlist]
 
 # my-schdule == enrollments
 @app.get("/enrollments")
