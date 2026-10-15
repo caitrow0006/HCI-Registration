@@ -148,7 +148,7 @@ def get_sections(course_title: str, crn: str):
     #nothing was entered
     if crn == "" and course_title == "":
         #TODO: handle error better
-        search_results = sections.copy()
+        search_results = [] #placeholder
         #ui.notify("ERROR: Nothing was entered into search. Enter a course name (ex. Math425.01) or a 5 digit crn (ex. 12345)")
         #return
     #no crn was entered
@@ -184,6 +184,7 @@ def toggle_register_button(e=None):
     #ui.notify(selected)
     num_checked = len(selected)
     num_enrolled = 0;
+    
     for item in selected:
         if item[0]["you_enrolled"]:
             num_enrolled = num_enrolled + 1
@@ -279,9 +280,10 @@ select_all.checked = False
     
 
 def add_drop_selections():
+
+    is_add = False
+    is_drop = False
     for item in selected:
-        is_add = False
-        is_drop = False
         #should all be either add or drop, but it's good to check anyways
         if item[0]["you_enrolled"]:
             is_drop = True
