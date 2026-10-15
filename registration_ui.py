@@ -280,23 +280,31 @@ def add_drop_selections():
         
 def register_selected():
     #ui.notify(selected)
-    for item in selected:
-        #ui.notify(item[0]["id"])
-        id = item[0]["id"]
-        if api_post(f"/register/{id}", {"section_id": int(item[0]["id"])}):
-            ui.notify("Registered", type="positive")
+    ids = [int(item[0]["id"]) for item in selected]
+    if not ids:
+        ui.notify("No courses selected for registration.", type="warning")
+        return
+    response = api_post("/register", ids)
+    if response:
+        ui.notify("Registered", type="positive")
             #render_enrollments.refresh()
             #render_search_results.refresh()
     #TODO: Not sure of this is right
     get_enrollments()
 
 def drop_selected():
+    ids = [int(item[0]["id"]) for item in selected]
+    if not ids:
+        ui.notify("No courses selected for dropping.", type="warning")
+        return
     #ui.notify(selected)
-    for item in selected:
-        #ui.notify(item[0]["id"])
-        id = item[0]["id"]
-        if api_delete(f"/drop/{id}", {"section_id": int(item[0]["id"])}):
-            ui.notify("Dropped", type="warning")
+    response = api_delete("/drop", ids)
+
+    if response:
+        ui.notify("Dropped", type="positive")
+            #render_enrollments.refresh()
+            #render_search_results.refresh()
+        get_enrollments()
 
 def render_sidebar():
     drawer = ui.left_drawer().props("width=110")
