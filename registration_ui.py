@@ -19,6 +19,7 @@ from nicegui import ui
 
 API_BASE = "http://localhost:8005"
 search_results = []
+options = []
 enrollments = []
 
 def api_get(path: str):
@@ -153,6 +154,7 @@ def get_sections(course_title: str, crn: str):
         
 @ui.refreshable
 def render_search_results():
+    options.clear()
     course = []
     title = ""
     department = ""
@@ -168,7 +170,12 @@ def render_search_results():
         instructor = str(result['instructor'])
         #TODO:Add selectable radio buttons
         #ui.notify(f"{department}{course_num} {title} Section: {section_num} Taught by: {instructor}")
-        ui.label(f"{department}{course_num} {title} Section: {section_num} Taught by: {instructor}")
+        with ui.row().classes("w-full items-center no-wrap bg-gray-100 rounded") as row:
+            checkbox = ui.checkbox()
+            label = ui.label(
+                f"{department}{course_num} {title} Section: {section_num} Taught by: {instructor}"
+            ).classes("flex-grow") #fill available space
+        options.append((checkbox, label))
 
 
 def register_section(section_id: int):
