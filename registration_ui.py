@@ -23,6 +23,7 @@ query = None
 options = []
 selected = []
 enrollments = []
+wishlists = []
 register_button = None
 
 def api_get(path: str):
@@ -210,7 +211,17 @@ def toggle_register_button(e=None):
     
     #ui.notify(selected)
 
-    
+def get_wishlists():
+    global wishlists
+    wishlists = api_get("/wishlists")
+
+def get_wishlist_courses(wishlist_id:int):
+    global search_results
+    search_results.clear()
+    wishlist_courses = api_get(f"/wishlist/{wishlist_id}")
+    for result in wishlist_courses:
+        search_results.append(result)
+    render_search_results.refresh()
         
 @ui.refreshable
 def render_search_results():
@@ -351,9 +362,17 @@ def render_register_page():
 
             ui.label("Search From Wishlist").style('font-size: 25px; font-weight: bold; font-family: Arial')
             with ui.dropdown_button('Select Wishlist', auto_close=True):
-                ui.item('Wishlist 1', on_click=lambda: ui.notify('You clicked item 1'))
-                ui.item('Wishlist 2', on_click=lambda: ui.notify('You clicked item 2'))
-                ui.item('Wishlist 3', on_click=lambda: ui.notify('You clicked item 2'))            
+                wishlists = api_get("/wishlists")
+                if not wishlists:
+                    ui.item('No Wishlists Available')
+                else:
+                    for w in wishlists:
+                        w_id = w.get("wishlist_id")
+                        w_name = w.get("wishlist_name", f"Wishlist {w_id}")
+                        ui.item(
+                            w_name, 
+                            on_click=lambda wid=w_id, wname=w_name: get_wishlist_courses(wid)
+                        )
             
             #Button to search
             search_sections_btn = ui.button("Search", on_click=lambda: (get_sections(course_name_input.value, crn_input.value))).classes('w-25 h-12 ml-auto mt-40')
