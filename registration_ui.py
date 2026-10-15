@@ -333,7 +333,7 @@ def render_sidebar():
         #TODO: in future need to change this for all images and make them display a different page
         #for each respective image
         ui.interactive_image('images/pencil.png') \
-            .on('click', lambda e: ui.notify('You clicked an Image!', timeout = 2000)).classes('w-full cursor-pointer')
+            .on('click', lambda e: (render_register_page.refresh(), search_results.clear(), render_search_results.refresh())).classes('w-full cursor-pointer')
         ui.label('Register').classes('text-white').style("font-weight: bold;")
 
         ui.image('images/light.png').classes('w-full')
@@ -366,13 +366,14 @@ def render_enrollments():
         instructor = str(course['instructor'])
         ui.label(f"{department}{course_num} {title} Section: {section_num} Taught by: {instructor}")
 
+@ui.refreshable
 def render_register_page():
     #to overshadow the one uptop
     global register_button
     global select_all_button
     
     #The main register page
-    with ui.row().classes('w-full pl-4'):
+    with ui.row().classes('w-[1380px] pl-4'):
         with ui.row().classes('w-full bg-blue-100 p-4'):
             ui.label("Register").style('font-size: 45px; font-weight: bold; font-family: Arial')
 
@@ -417,9 +418,11 @@ def render_register_page():
                     select_all_button = ui.button("Select All", on_click=lambda: ( (select_all())
                     ))
 
-            with ui.card().classes('w-full h-1/2'):
-                ui.label("Registered For:").classes("mt-6").style('font-size: 25px; font-weight: bold; font-family: Arial')
-                render_enrollments()
+            with ui.card().classes('w-full h-[220px]'):
+                ui.label("Registered For:").style('font-size: 25px; font-weight: bold; font-family: Arial')
+                get_enrollments()
+                with ui.scroll_area():
+                    render_enrollments()
 @ui.page("/")
 def main_page():
     render_sidebar()
