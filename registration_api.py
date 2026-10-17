@@ -64,6 +64,17 @@ def _reindex_enrollments():
     for idx, e in enumerate(ENROLLMENTS, start=1):
         e.id = idx
 
+def _time_conflict_detector(sched1: Course, sched2: Course) -> bool:
+    if sched1.schedule.days == "TBA" or sched2.schedule.days == "TBA" or sched1.schedule.start_hour == 0 or sched2.schedule.start_hour == 0:
+        return False
+    
+    # check if the two schedules have any overlapping days
+    has_day_overlap = any(day in sched2.schedule.days for day in sched1.schedule.days)
+    if not has_day_overlap:
+        return False
+
+    # check if the two schedules have overlapping times
+    return (sched1.schedule.start_hour < sched2.schedule.end_hour) and (sched2.schedule.start_hour < sched1.schedule.end_hour)
 # Endpoints
 
 @app.get("/sections")
@@ -120,6 +131,19 @@ def register(section_id: list[int] = Body(...)):
                 status_code=400, 
                 detail=f'{section.department} ({section.course_num}, {section.section_num}) is full'
             )
+        for e in ENROLLMENTS:
+            if _time_conflict_detector(section, e.course) and e.student.lower() == "you":
+                raise HTTPException(
+                    status_code=400,
+                    detail=f'{section.title} ({section.department} {section.course_num}, {section.section_num}) Time conflict with {e.course.title} ({e.course.department} {e.course.course_num}, {e.course.section_num})'
+                )
+
+        for prev_section in section_to_register:
+            if _time_conflict_detector(section, prev_section):
+                raise HTTPException(
+                    status_code=400,
+                    detail=f'{section.title} ({section.department} {section.course_num}, {section.section_num}) Time conflict with {prev_section.title} ({prev_section.department} {prev_section.course_num}, {prev_section.section_num})'
+                )
         section_to_register.append(section)
     new_enrollments = []
     for section in section_to_register:
