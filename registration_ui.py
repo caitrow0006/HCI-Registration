@@ -39,8 +39,8 @@ def api_get(path: str):
 def api_post(path: str, json: dict):
     try:
         resp = requests.post(f"{API_BASE}{path}", json=json, timeout=5)
-        resp.raise_for_status()
-        return True
+        # resp.raise_for_status()
+        return resp
     except requests.RequestException as e:
         detail = ""
         try:
@@ -48,7 +48,7 @@ def api_post(path: str, json: dict):
         except Exception:
             pass
         ui.notify(detail or f"Request failed: {e}", type="negative")
-        return False
+        return e
         
 def api_delete(path:str , json: dict):
     try:
