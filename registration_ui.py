@@ -27,6 +27,7 @@ enrollments = []
 wishlists = []
 register_button = None
 select_all_button = None
+startUp = True
 
 def api_get(path: str):
     try:
@@ -65,6 +66,9 @@ def api_delete(path:str , json: dict):
         ui.notify(detail or f"Request failed: {e}", type="negative")
         return False
 
+def set_startup_false():
+    global startUp
+    startUp = False
       
 def search_on_crn(sections:dict, filtered:dict, crn:int):
     #ui.notify("searching on crn")
@@ -230,6 +234,13 @@ def get_wishlist_courses(wishlist_id:int):
         
 @ui.refreshable
 def render_search_results():
+
+    # At start up, nothing should be rendered
+    global startUp
+    if startUp:
+        ui.label("No courses yet. Use the Search button to find courses.")
+        return
+    
     options.clear()
     course = []
     title = ""
@@ -432,7 +443,7 @@ def render_register_page():
                         )
             
             #Button to search
-            search_sections_btn = ui.button("Search", on_click=lambda: (get_sections(course_name_input.value, crn_input.value))).classes('w-25 h-12 mr-auto mt-30')
+            search_sections_btn = ui.button("Search", on_click=lambda: ((get_sections(course_name_input.value, crn_input.value)), set_startup_false())).classes('w-25 h-12 mr-auto mt-30')
             #render_content()
                 
         
