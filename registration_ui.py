@@ -27,7 +27,9 @@ enrollments = []
 wishlists = []
 register_button = None
 select_all_button = None
-startUp = True
+searchCompleted = False
+course_name_input = ""
+crn_input = ""
 
 def api_get(path: str):
     try:
@@ -41,8 +43,8 @@ def api_get(path: str):
 def api_post(path: str, json: dict):
     try:
         resp = requests.post(f"{API_BASE}{path}", json=json, timeout=5)
-        resp.raise_for_status()
-        return True
+        # resp.raise_for_status()
+        return resp
     except requests.RequestException as e:
         detail = ""
         try:
@@ -50,7 +52,7 @@ def api_post(path: str, json: dict):
         except Exception:
             pass
         ui.notify(detail or f"Request failed: {e}", type="negative")
-        return False
+        return e
         
 def api_delete(path:str , json: dict):
     try:
@@ -66,15 +68,16 @@ def api_delete(path:str , json: dict):
         ui.notify(detail or f"Request failed: {e}", type="negative")
         return False
 
-def set_startup_false():
-    global startUp
-    startUp = False
-      
+def search_successful(completion):
+    global searchCompleted
+    searchCompleted = completion
+          
 def search_on_crn(sections:dict, filtered:dict, crn:int):
     #ui.notify("searching on crn")
     if (crn.isnumeric() == False) or (len(crn) != 5):
         #TODO: INFORM USER OF ERROR
         ui.notify("ERROR: Invalid CRN entered. Must be a 5 digit number.")
+        return -1
     else:
         for section in sections:
             if (section["crn"] != int(crn)):
@@ -152,8 +155,8 @@ def get_sections(course_title: str, crn: str):
     
     #nothing was entered
     if crn == "" and course_title == "":
-        #TODO: handle error better
-        search_results = [] #placeholder
+        # Do not re-render courses if no fields are entered
+        return
         #ui.notify("ERROR: Nothing was entered into search. Enter a course name (ex. Math425.01) or a 5 digit crn (ex. 12345)")
         #return
     #no crn was entered
@@ -162,7 +165,9 @@ def get_sections(course_title: str, crn: str):
           
     #no course title was entered
     elif course_title == "":
-        search_on_crn(sections, filtered, crn)
+        # Do not re-render page is CRN is entered incorrectly
+        if (search_on_crn(sections, filtered, crn) == -1):
+            return
         
     else: #both fields, default is to search on CRN
         #search first on CRN
@@ -236,8 +241,8 @@ def get_wishlist_courses(wishlist_id:int):
 def render_search_results():
 
     # At start up, nothing should be rendered
-    global startUp
-    if startUp:
+    global searchCompleted
+    if not searchCompleted:
         ui.label("No courses yet. Use the Search button to find courses.")
         return
     
@@ -324,10 +329,15 @@ def register_selected():
         ui.notify("No courses selected for registration.", type="warning")
         return
     response = api_post("/register", ids)
-    if response:
+    if response.status_code == 200:
         ui.notify("Registered", type="positive")
             #render_enrollments.refresh()
             #render_search_results.refresh()
+    # if time conflict with another course
+    elif response.status_code == 400:
+        error_data = response.json()
+        error_message = error_data.get("detail", "Registration failed")
+        ui.notify(error_message, type="negative")
 
 def drop_selected():
     ids = [int(item[0]["id"]) for item in selected]
@@ -342,6 +352,15 @@ def drop_selected():
             #render_enrollments.refresh()
             #render_search_results.refresh()
         get_enrollments()
+
+def drop_course(id):
+    global course_name_input, crn_input
+    response = api_delete("/drop", [id])
+    if response:
+        ui.notify("Dropped", type="positive")
+        get_enrollments()
+        # Must trigger refresh search to clear "drop selected"
+        get_sections(course_name_input.value, crn_input.value)
 
 def render_sidebar():
     drawer = ui.left_drawer().props("width=110")
@@ -386,7 +405,10 @@ def render_enrollments():
         course_num = str(course['course_num'])
         section_num = str(course['section_num'])
         instructor = str(course['instructor'])
-        ui.label(f"{department}{course_num} {title} Section: {section_num} Taught by: {instructor}")
+        course_id = course['id']        
+        with ui.row().classes("w-full items-center no-wrap bg-gray-100 rounded") as row:
+            ui.label(f"{department}{course_num} {title} Section: {section_num} Taught by: {instructor}").classes("flex-grow p-1") #fill available space
+            ui.button("Drop", on_click=lambda course_id=course_id: drop_course(course_id)).props("color=red")
 
 @ui.refreshable
 def render_register_page():
@@ -423,9 +445,11 @@ def render_register_page():
         # Column 1
         with ui.column().classes("w-4/10 h-[580px] bg-blue-100 p-4"):
             ui.label("Search on Course Title").style('font-size: 25px; font-weight: bold;')
+            global course_name_input
             course_name_input = ui.input(placeholder="Ex: Math 425").classes('bg-white border-2 border-blue-500 rounded-md px-2 width-50')
 
             ui.label("Search on CRN").style('font-size: 25px; font-weight: bold;')
+            global crn_input
             crn_input = ui.input(placeholder="Ex: 73242").classes('bg-white border-2 border-blue-500 rounded-md px-2 width-50')
 
             ui.label("Search From Wishlist").style('font-size: 25px; font-weight: bold;')
@@ -443,7 +467,7 @@ def render_register_page():
                         )
             
             #Button to search
-            search_sections_btn = ui.button("Search", on_click=lambda: ((get_sections(course_name_input.value, crn_input.value)), set_startup_false())).classes('w-25 h-12 mr-auto mt-30')
+            search_sections_btn = ui.button("Search", on_click=lambda: ((get_sections(course_name_input.value, crn_input.value)), search_successful(completion=True))).classes('w-25 h-12 mr-auto mt-30')
             #render_content()
                 
         
