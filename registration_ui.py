@@ -14,8 +14,9 @@ Then http://localhost:8084 will automatically open.
 """
 
 import requests
+from pathlib import Path
 import re
-from nicegui import ui
+from nicegui import ui, app
 
 API_BASE = "http://localhost:8005"
 search_results = []
@@ -381,22 +382,42 @@ def render_register_page():
     #to overshadow the one uptop
     global register_button
     global select_all_button
+
+    # Establish font directory
+    current_dir = Path(__file__).parent
+    fonts_dir = current_dir / 'fonts'
+    app.add_static_files('/fonts', str(fonts_dir))
+
+    # Establish the default font for all text
+    ui.add_head_html(f'''
+        <style>
+        @font-face {{
+            font-family: 'LexendLocal';
+            src: url('/fonts/Lexend-Regular.ttf') format('truetype');
+            font-weight: normal;
+            font-style: normal;
+        }}
+        body {{
+            font-family: 'LexendLocal', sans-serif;
+        }}
+        </style>
+    ''')
     
     #The main register page
-    with ui.row().classes('w-[1380px] pl-4'):
+    with ui.row().classes('w-full pl-4'):
         with ui.row().classes('w-full bg-blue-100 p-4'):
-            ui.label("Register").style('font-size: 45px; font-weight: bold; font-family: Arial')
+            ui.label("Register").style('font-size: 45px; font-weight: bold;')
 
-    with ui.row().classes('w-screen h-screen p-4'):    
+    with ui.row().classes('w-screen h-full pb-[20px] box-border p-4'):    
         # Column 1
-        with ui.column().classes("w-4/10 h-[600px] bg-blue-100 p-4"):
-            ui.label("Search on Course Title").style('font-size: 25px; font-weight: bold; font-family: Arial')
+        with ui.column().classes("w-4/10 h-[580px] bg-blue-100 p-4"):
+            ui.label("Search on Course Title").style('font-size: 25px; font-weight: bold;')
             course_name_input = ui.input(placeholder="Ex: Math 425").classes('bg-white border-2 border-blue-500 rounded-md px-2 width-50')
 
-            ui.label("Search on CRN").style('font-size: 25px; font-weight: bold; font-family: Arial')
+            ui.label("Search on CRN").style('font-size: 25px; font-weight: bold;')
             crn_input = ui.input(placeholder="Ex: 73242").classes('bg-white border-2 border-blue-500 rounded-md px-2 width-50')
 
-            ui.label("Search From Wishlist").style('font-size: 25px; font-weight: bold; font-family: Arial')
+            ui.label("Search From Wishlist").style('font-size: 25px; font-weight: bold;')
             with ui.dropdown_button('Select Wishlist', auto_close=True):
                 wishlists = api_get("/wishlists")
                 if not wishlists:
@@ -411,13 +432,13 @@ def render_register_page():
                         )
             
             #Button to search
-            search_sections_btn = ui.button("Search", on_click=lambda: (get_sections(course_name_input.value, crn_input.value))).classes('w-25 h-12 mr-auto mt-40')
+            search_sections_btn = ui.button("Search", on_click=lambda: (get_sections(course_name_input.value, crn_input.value))).classes('w-25 h-12 mr-auto mt-30')
             #render_content()
                 
         
-        with ui.column().classes("w-5/10 h-[600px] bg-blue-100 p-4"):
-            with ui.card().classes('w-full h-3/5'):
-                ui.label("Results:").style('font-size: 25px; font-weight: bold; font-family: Arial')
+        with ui.column().classes("w-5/10 h-[580px] bg-blue-100 p-4"):
+            with ui.card().classes('w-full h-[300px]'):
+                ui.label("Results:").style('font-size: 25px; font-weight: bold;')
                 with ui.scroll_area():
                     render_search_results()
                     
@@ -429,7 +450,7 @@ def render_register_page():
                     ))
 
             with ui.card().classes('w-full h-[220px]'):
-                ui.label("Registered For:").style('font-size: 25px; font-weight: bold; font-family: Arial')
+                ui.label("Registered For:").style('font-size: 25px; font-weight: bold;')
                 get_enrollments()
                 with ui.scroll_area():
                     render_enrollments()
