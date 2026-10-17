@@ -27,7 +27,7 @@ enrollments = []
 wishlists = []
 register_button = None
 select_all_button = None
-startUp = True
+searchCompleted = False
 
 def api_get(path: str):
     try:
@@ -66,15 +66,16 @@ def api_delete(path:str , json: dict):
         ui.notify(detail or f"Request failed: {e}", type="negative")
         return False
 
-def set_startup_false():
-    global startUp
-    startUp = False
-      
+def search_successful(completion):
+    global searchCompleted
+    searchCompleted = completion
+          
 def search_on_crn(sections:dict, filtered:dict, crn:int):
     #ui.notify("searching on crn")
     if (crn.isnumeric() == False) or (len(crn) != 5):
         #TODO: INFORM USER OF ERROR
         ui.notify("ERROR: Invalid CRN entered. Must be a 5 digit number.")
+        return -1
     else:
         for section in sections:
             if (section["crn"] != int(crn)):
@@ -152,8 +153,8 @@ def get_sections(course_title: str, crn: str):
     
     #nothing was entered
     if crn == "" and course_title == "":
-        #TODO: handle error better
-        search_results = [] #placeholder
+        # Do not re-render courses if no fields are entered
+        return
         #ui.notify("ERROR: Nothing was entered into search. Enter a course name (ex. Math425.01) or a 5 digit crn (ex. 12345)")
         #return
     #no crn was entered
@@ -162,7 +163,9 @@ def get_sections(course_title: str, crn: str):
           
     #no course title was entered
     elif course_title == "":
-        search_on_crn(sections, filtered, crn)
+        # Do not re-render page is CRN is entered incorrectly
+        if (search_on_crn(sections, filtered, crn) == -1):
+            return
         
     else: #both fields, default is to search on CRN
         #search first on CRN
@@ -236,8 +239,8 @@ def get_wishlist_courses(wishlist_id:int):
 def render_search_results():
 
     # At start up, nothing should be rendered
-    global startUp
-    if startUp:
+    global searchCompleted
+    if not searchCompleted:
         ui.label("No courses yet. Use the Search button to find courses.")
         return
     
@@ -443,7 +446,7 @@ def render_register_page():
                         )
             
             #Button to search
-            search_sections_btn = ui.button("Search", on_click=lambda: ((get_sections(course_name_input.value, crn_input.value)), set_startup_false())).classes('w-25 h-12 mr-auto mt-30')
+            search_sections_btn = ui.button("Search", on_click=lambda: ((get_sections(course_name_input.value, crn_input.value)), search_successful(completion=True))).classes('w-25 h-12 mr-auto mt-30')
             #render_content()
                 
         
