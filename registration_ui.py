@@ -312,10 +312,15 @@ def register_selected():
         ui.notify("No courses selected for registration.", type="warning")
         return
     response = api_post("/register", ids)
-    if response:
+    if response.status_code == 200:
         ui.notify("Registered", type="positive")
             #render_enrollments.refresh()
             #render_search_results.refresh()
+    # if time conflict with another course
+    elif response.status_code == 400:
+        error_data = response.json()
+        error_message = error_data.get("detail", "Registration failed")
+        ui.notify(error_message, type="negative")
 
 def drop_selected():
     ids = [int(item[0]["id"]) for item in selected]
