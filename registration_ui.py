@@ -28,6 +28,8 @@ wishlists = []
 register_button = None
 select_all_button = None
 searchCompleted = False
+course_name_input = ""
+crn_input = ""
 
 def api_get(path: str):
     try:
@@ -346,6 +348,15 @@ def drop_selected():
             #render_search_results.refresh()
         get_enrollments()
 
+def drop_course(id):
+    global course_name_input, crn_input
+    response = api_delete("/drop", [id])
+    if response:
+        ui.notify("Dropped", type="positive")
+        get_enrollments()
+        # Must trigger refresh search to clear "drop selected"
+        get_sections(course_name_input.value, crn_input.value)
+
 def render_sidebar():
     drawer = ui.left_drawer().props("width=110")
     drawer.style('background-color: #003591')
@@ -389,7 +400,10 @@ def render_enrollments():
         course_num = str(course['course_num'])
         section_num = str(course['section_num'])
         instructor = str(course['instructor'])
-        ui.label(f"{department}{course_num} {title} Section: {section_num} Taught by: {instructor}")
+        course_id = course['id']        
+        with ui.row().classes("w-full items-center no-wrap bg-gray-100 rounded") as row:
+            ui.label(f"{department}{course_num} {title} Section: {section_num} Taught by: {instructor}").classes("flex-grow p-1") #fill available space
+            ui.button("Drop", on_click=lambda course_id=course_id: drop_course(course_id)).props("color=red")
 
 @ui.refreshable
 def render_register_page():
@@ -426,9 +440,11 @@ def render_register_page():
         # Column 1
         with ui.column().classes("w-4/10 h-[580px] bg-blue-100 p-4"):
             ui.label("Search on Course Title").style('font-size: 25px; font-weight: bold;')
+            global course_name_input
             course_name_input = ui.input(placeholder="Ex: Math 425").classes('bg-white border-2 border-blue-500 rounded-md px-2 width-50')
 
             ui.label("Search on CRN").style('font-size: 25px; font-weight: bold;')
+            global crn_input
             crn_input = ui.input(placeholder="Ex: 73242").classes('bg-white border-2 border-blue-500 rounded-md px-2 width-50')
 
             ui.label("Search From Wishlist").style('font-size: 25px; font-weight: bold;')
