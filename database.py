@@ -62,6 +62,6 @@ ENROLLMENTS = [
 _next_enrollment_id = 3
 
 WISHLIST = [
-    Wishlist_item(id=1, wishlist="primary list", course=[SECTIONS[12], SECTIONS[13]], student="You"),
+    Wishlist_item(id=1, wishlist="primary list", course=[SECTIONS[0], SECTIONS[3], SECTIONS[10]], student="You"),
     Wishlist_item(id=2, wishlist="secondary list", course=[SECTIONS[14]], student="You")
 ]

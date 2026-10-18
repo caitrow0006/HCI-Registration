@@ -415,6 +415,7 @@ def render_register_page():
     #to overshadow the one uptop
     global register_button
     global select_all_button
+    searchCompleted = False #rerenders nothing searched when page refreshed
 
     # Establish font directory
     current_dir = Path(__file__).parent
