@@ -214,7 +214,7 @@ def toggle_register_button(e=None):
     elif num_enrolled == 0:
         #ui.notify("all selection are not enrolled in")
         register_button.enable()
-        register_button.props("color=blue")
+        register_button.props("color=green")
         register_button.set_text(f"Register ({num_checked} selected)")
      
     #all selected one we are enrolled in
@@ -439,7 +439,7 @@ def render_register_page():
     #The main register page
     with ui.row().classes('w-full pl-4'):
         with ui.row().classes('w-full bg-blue-100 p-4'):
-            ui.label("Register").style('font-size: 45px; font-weight: bold;')
+            ui.image('images/register.png').classes('w-100')
 
     with ui.row().classes('w-screen h-full pb-[20px] box-border p-4'):    
         # Column 1
