@@ -74,7 +74,11 @@ def _time_conflict_detector(sched1: Course, sched2: Course) -> bool:
         return False
 
     # check if the two schedules have overlapping times
-    return (sched1.schedule.start_hour < sched2.schedule.end_hour) and (sched2.schedule.start_hour < sched1.schedule.end_hour)
+    
+def _same_class(sched1: Course, sched2: Course) -> bool:
+    if sched1.department == sched2.department and sched1.course_num == sched2.course_num:
+        return True
+
 # Endpoints
 
 @app.get("/sections")
@@ -137,6 +141,11 @@ def register(section_id: list[int] = Body(...)):
                     status_code=400,
                     detail=f'{section.title} ({section.department} {section.course_num}, {section.section_num}) Time conflict with {e.course.title} ({e.course.department} {e.course.course_num}, {e.course.section_num})'
                 )
+            if _same_class(section, e.course) and e.student.lower() == "you":
+                            raise HTTPException(
+                                status_code=400,
+                                detail=f'{section.title} ({section.department} {section.course_num}, {section.section_num}) You have already registered same class: {e.course.title} ({e.course.department} {e.course.course_num}, {e.course.section_num})'
+                            )
 
         for prev_section in section_to_register:
             if _time_conflict_detector(section, prev_section):
@@ -144,6 +153,11 @@ def register(section_id: list[int] = Body(...)):
                     status_code=400,
                     detail=f'{section.title} ({section.department} {section.course_num}, {section.section_num}) Time conflict with {prev_section.title} ({prev_section.department} {prev_section.course_num}, {prev_section.section_num})'
                 )
+            if _same_class(section, prev_section):
+                            raise HTTPException(
+                                status_code=400,
+                                detail=f'{section.title} ({section.department} {section.course_num}, {section.section_num}) You have already registered same class: {prev_section.title} ({prev_section.department} {prev_section.course_num}, {prev_section.section_num})'
+                            )
         section_to_register.append(section)
     new_enrollments = []
     for section in section_to_register:
