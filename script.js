@@ -153,7 +153,7 @@ async function renderCurEnrollments() {
     return;
   }
   for (const s of enrolled) {
-    container.appendChild(el("div", `${s.course.department} - ${s.course.title} - ${s.course.instructor} - ${s.course.meets} - ${s.course.seats_open}/${s.course.capacity} seats open`));
+    container.appendChild(el("div", `${s.course.department} - ${s.course.title} - ${s.course.instructor} - (${s.course.schedule.days}, ${Math.floor(s.course.schedule.start_hour/100)}:${String(s.course.schedule.start_hour%100).padStart(2, '0')} - ${Math.floor(s.course.schedule.end_hour/100)}:${String(s.course.schedule.end_hour%100).padStart(2, '0')}) - ${s.course.seats_open}/${s.course.capacity} seats open`));
   }
 }
 
@@ -220,7 +220,7 @@ function renderSearchResults(courses) {
 
     const label = el("label");
     label.htmlFor = `result-${index}`;
-    label.textContent = `${course.department} ${course.course_num}.${course.section_num} - ${course.title} - Taught by: ${course.instructor} - ${course.meets} - ${course.seats_open}/${course.capacity} seats open`;
+    label.textContent = `${course.department} ${course.course_num}.${course.section_num} - ${course.title} - Taught by: ${course.instructor} - (${course.schedule.days}, ${Math.floor(course.schedule.start_hour/100)}:${String(course.schedule.start_hour%100).padStart(2, '0')} - ${Math.floor(course.schedule.end_hour/100)}:${String(course.schedule.end_hour%100).padStart(2, '0')})  - ${course.seats_open}/${course.capacity} seats open`;
 
     row.appendChild(checkbox);
     row.appendChild(label);
