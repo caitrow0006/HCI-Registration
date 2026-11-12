@@ -153,9 +153,66 @@ async function renderCurEnrollments() {
     return;
   }
   for (const s of enrolled) {
-    container.appendChild(el("div", `${s.course.department} ${s.course.course_num}.${s.course.section_num} - ${s.course.title} - ${s.course.instructor} - ( ${s.course.schedule.days}, ${Math.floor(s.course.schedule.start_hour/100)}:${String(s.course.schedule.start_hour%100).padStart(2, '0')} - ${Math.floor(s.course.schedule.end_hour/100)}:${String(s.course.schedule.end_hour%100).padStart(2, '0')} - ${s.course.schedule.building}, ${s.course.schedule.room_num} ) - ${s.course.seats_open}/${s.course.capacity} seats open`));
+    const row = el("div")
+
+    row.style.display = "flex";
+    row.style.gap = "10px";
+
+    row.appendChild(el("div", `${s.course.department} ${s.course.course_num}.${s.course.section_num} - ${s.course.title} - ${s.course.instructor} - ( ${s.course.schedule.days}, ${Math.floor(s.course.schedule.start_hour/100)}:${String(s.course.schedule.start_hour%100).padStart(2, '0')} - ${Math.floor(s.course.schedule.end_hour/100)}:${String(s.course.schedule.end_hour%100).padStart(2, '0')} - ${s.course.schedule.building}, ${s.course.schedule.room_num} ) - ${s.course.seats_open}/${s.course.capacity} seats open`));
+    const theDropButton = el("button", "Drop")
+  
+
+    //Create event listeners for each drop buttons
+    theDropButton.addEventListener("click", dropButtonsOnClick)
+
+    //TODO: Need to hook this up with cats existing popup
+
+    const dropDialog = document.getElementById("drop-dialog");
+    const dropMessage = document.getElementById("drop-message");
+    const cancelDrop = document.getElementById("cancel-drop");
+    const confirmDrop = document.getElementById("confirm-drop");
+
+    //handling when drop button is clicked
+    async function dropButtonsOnClick(){
+        //id to drop
+        const dropped = [Number(s.course.id)]
+
+        dropMessage.textContent = `Are you sure you want to drop ${s.course.title}?`
+
+        //display the dialog
+        dropDialog.showModal();
+
+        //Confirmed drop
+        confirmDrop.onclick = async () => {
+          //call api to drop id
+          success = await apiPost("/drop", [Number(s.course.id)]);
+          
+          //rerender current courses after drop
+          renderAll();
+          currentCourses = await apiGet("/sections");
+          renderSearchResults();
+          updateRegisterButtonState();
+
+          dropDialog.close();
+
+
+        }
+
+        cancelDrop.onclick = async () => {
+          dropDialog.close();
+        }
+
+
+
+
+    }
+
+    row.appendChild(theDropButton)
+    container.appendChild(row)
   }
 }
+
+
 
 async function getWishLists() {
   const wishlists = await apiGet("/wishlists");
