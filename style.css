@@ -13,20 +13,45 @@
     font-size: 18px; 
   }
 
+/*https://www.w3schools.com/css/css_border.asp*/
+/*borders and styling around areas*/
+  section {
+    border: thin solid gray;
+    border-radius: 10px;
+    padding: 1%;
+    margin: 1%;
+  }
+
   .layout { 
     display: flex; gap: 16px; 
   }
 
   .col { 
-    width: 50%; padding: 8px; 
+    width: 50%; padding: 8px;
   }
 
-  .row { 
+/*TODO: choose longterm color choice for .row and .row:hover*/
+  .row {
     display: flex; 
     align-items: center; 
-    gap: 8px; 
-    margin: 4px 0; 
+    gap: 8px;
+    margin: 4px 0;
+    
+    /*borders and styling around search results*/
+    border: medium solid gray;
+    border-radius: 10px;
+    padding: 1%;
+    margin: 1%;
   }
+
+/*make result dynamically shift on hover*/
+/*https://www.w3schools.com/cssref/sel_hover.php*/
+/*https://www.geeksforgeeks.org/css/how-to-change-the-cursor-on-hovering-in-css/*/
+.row:hover {
+    cursor: pointer;
+    /*TODO: not sure how to make the actual text itself inherit the hover pointer*/
+    background-color: gray;
+}
 
   .sidebar-icons {
     list-style: none;
@@ -45,9 +70,13 @@
     padding-bottom: 10px;
   }
 
+.sidebar-icon-group {
+    margin-bottom: 25%;
+}
+
 
   hr { 
-    margin: 8px 0; 
+    margin: 8px 0;
   }
 
   #sidebar {
