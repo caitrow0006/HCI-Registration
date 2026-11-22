@@ -74,6 +74,10 @@ def _time_conflict_detector(sched1: Course, sched2: Course) -> bool:
         return False
 
     # check if the two schedules have overlapping times
+    return (
+        sched1.schedule.start_hour < sched2.schedule.end_hour
+        and sched2.schedule.start_hour < sched1.schedule.end_hour
+    )
     
 def _same_class(sched1: Course, sched2: Course) -> bool:
     if sched1.department == sched2.department and sched1.course_num == sched2.course_num:
