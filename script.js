@@ -51,6 +51,7 @@ async function searchBtnOnClick(){
   const errorTesxt = document.getElementById("error-message");
   const titleInput = document.getElementById("title-search-input").value.replace(/\s+/g, "").toLowerCase();
   const crnInput = document.getElementById("crn-search-input").value.trim();
+  const wishlistSelect = document.getElementById("wishlist-search-select");
 
   //entered into both input boxes
   if(titleInput != "" && crnInput != ""){
@@ -63,12 +64,14 @@ async function searchBtnOnClick(){
 
     closeError.onclick = async () => {
       errorPop.close()
-
-    }
-    
-
+    };
+    return;
   }
-
+  
+  if (wishlistSelect) {
+    wishlistSelect.value = "default";
+  }
+  currentCourses = await apiGet("/sections");
 
   const filteredCourses = currentCourses.filter((course) => {
     const courseCodeString = `${course.department}${course.course_num}.${course.section_num}`.toLowerCase();
